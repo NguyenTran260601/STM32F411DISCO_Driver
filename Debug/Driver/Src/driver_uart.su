@@ -1,0 +1,15 @@
+../Driver/Src/driver_uart.c:13:6:USART_PeriClockControl	16	static
+../Driver/Src/driver_uart.c:37:6:USART_Init	24	static
+../Driver/Src/driver_uart.c:122:6:USART_DeInit	16	static
+../Driver/Src/driver_uart.c:140:6:USART_SendData	32	static
+../Driver/Src/driver_uart.c:187:7:USART_ReceiveData	32	static
+../Driver/Src/driver_uart.c:243:9:USART_SendDataIT	32	static
+../Driver/Src/driver_uart.c:266:9:USART_ReceiveDataIT	32	static
+../Driver/Src/driver_uart.c:288:6:USART_IRQITConfig	16	static
+../Driver/Src/driver_uart.c:327:6:USART_IRQPriorityConfig	24	static
+../Driver/Src/driver_uart.c:339:6:USART_IRQHandling	32	static
+../Driver/Src/driver_uart.c:627:9:USART_GetFlagStatus	16	static
+../Driver/Src/driver_uart.c:637:6:USART_ClearFlag	16	static
+../Driver/Src/driver_uart.c:642:6:USART_PeripheralControl	16	static
+../Driver/Src/driver_uart.c:653:6:USART_SetBaudRate	40	static
+../Driver/Src/driver_uart.c:720:26:USART_ApplicationEventCallback	16	static
