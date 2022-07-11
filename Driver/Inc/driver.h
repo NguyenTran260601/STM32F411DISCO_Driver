@@ -349,8 +349,7 @@ typedef struct
 #define NVIC_IRQ_PR13		13
 #define NVIC_IRQ_PR14		14
 #define NVIC_IRQ_PR15		15
-#define NVIC_IRQ_PR16		16
-#define NVIC_IRQ_PR17		17
+
 
 /*
  *Macro for some SPI_Register
