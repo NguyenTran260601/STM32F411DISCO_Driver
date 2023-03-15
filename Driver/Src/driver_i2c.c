@@ -8,9 +8,12 @@
 #include "driver_i2c.h"
 
 static void I2C_GenerateStartCondition(I2C_Reg_t *pI2Cx);
+void I2C_GenerateStopCondition(I2C_Reg_t *pI2Cx);
 static void I2C_ExcuteAddressPhaseWrite(I2C_Reg_t *pI2Cx, uint8_t SlaveAddr);
 static void I2C_ExcuteAddressPhaseRead(I2C_Reg_t *pI2Cx, uint8_t SlaveAddr);
 static void I2C_ClearADDRFlag(I2C_Handle_t *pI2CHandle);
+static void I2C_MasterHandlerTXNEInterrupt(I2C_Handle_t *pI2CHandle);
+static void I2C_MasterHandlerRXNEInterrupt(I2C_Handle_t *pI2CHandle);
 
 
 static void I2C_GenerateStartCondition(I2C_Reg_t *pI2Cx)
@@ -29,7 +32,7 @@ static void I2C_ExcuteAddressPhaseWrite(I2C_Reg_t *pI2Cx, uint8_t SlaveAddr)
 static void I2C_ExcuteAddressPhaseRead(I2C_Reg_t *pI2Cx, uint8_t SlaveAddr)
 {
 	SlaveAddr = SlaveAddr << 1;
-	SlaveAddr |= ~(1);
+	SlaveAddr |= 1;
 	pI2Cx ->I2C_DR = SlaveAddr;
 }
 
@@ -140,8 +143,18 @@ uint8_t I2C_SlaveReceiveData(I2C_Reg_t *pI2C)
 
 
 
-/*
- * Peripheral Clock setup
+/**************************Peripheral Clock Setup*******************
+ * @fn      		  - I2C_PeriClockControl
+ *
+ * @brief             - This function enables or disables peripheral clock for the given I2C port
+ *
+ * @param[in]         - base address of the I2C peripheral
+ * @param[in]         - ENABLE or DISABLE macros
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
  */
 void I2C_PeriClockControl(I2C_Reg_t *pI2Cx, uint8_t En_or_Di)
 {
@@ -150,8 +163,7 @@ void I2C_PeriClockControl(I2C_Reg_t *pI2Cx, uint8_t En_or_Di)
 			if(pI2Cx == I2C1)
 			{
 				I2C1_PCLOCK_ENABLE();
-			}
-			else if(pI2Cx == I2C2)
+			}else if(pI2Cx == I2C2)
 			{
 				I2C2_PCLOCK_ENABLE();
 			}else if(pI2Cx == I2C3)
@@ -160,7 +172,16 @@ void I2C_PeriClockControl(I2C_Reg_t *pI2Cx, uint8_t En_or_Di)
 			}
 		}else
 		{
-			//
+			if(pI2Cx == I2C1)
+			{
+				I2C1_PCLOCK_DISABLE();
+			}else if(pI2Cx == I2C2)
+			{
+				I2C2_PCLOCK_DISABLE();
+			}else if(pI2Cx == I2C3)
+			{
+				I2C3_PCLOCK_DISABLE();
+			}
 		}
 }
 
@@ -168,23 +189,37 @@ void I2C_PeriClockControl(I2C_Reg_t *pI2Cx, uint8_t En_or_Di)
 /*
  * Init and De_init
  */
+
+/************************************************************************
+ * @fn      		  - I2C_Init
+ *
+ * @brief             -
+ *
+ * @param[in]         - base address of the I2C handle
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
+ */
 void I2C_Init(I2C_Handle_t *pI2CHandle)
 {
 	uint32_t temp = 0;
 
 	I2C_PeriClockControl(pI2CHandle -> pI2Cx, ENABLE);
 	//ack
-	temp |= pI2CHandle-> I2C_Config.I2C_ACKControl << 10;
+	temp |= pI2CHandle-> I2C_Config.I2C_ACKControl << I2C_CR1_ACK;
 	pI2CHandle -> pI2Cx ->I2C_CR1 = temp;
 
 	//FREQ of CR2
 	temp = 0;
-	temp |= RCC_GetPCLK1Value() / 1000000U;
+	temp |= (RCC_GetPCLK1Value() / 1000000U);
 	pI2CHandle -> pI2Cx -> I2C_CR2 = (temp & 0x3F);
 
-	//program the device own address
-	temp |= pI2CHandle ->I2C_Config.I2C_DeviceAddress << 1;
-	temp |= (1 << 14);
+	//program the device own
+	temp |= pI2CHandle ->I2C_Config.I2C_DeviceAddress << I2C_OAR1_ADD;
+	temp |= (1 << I2C_OAR1_BIT14);
 	pI2CHandle -> pI2Cx -> I2C_OAR1 = temp;
 
 	//CCR
@@ -198,8 +233,8 @@ void I2C_Init(I2C_Handle_t *pI2CHandle)
 	}else
 	{
 		//mode is fast mode
-		temp |= (1 << 15);
-		temp |=	(pI2CHandle->I2C_Config.I2C_FMDutyCycle << 14);
+		temp |= (1 << I2C_CCR_FS);
+		temp |=	(pI2CHandle->I2C_Config.I2C_FMDutyCycle << I2C_CCR_DUTY);
 		if(pI2CHandle->I2C_Config.I2C_FMDutyCycle == I2C_FM_DUTY_2)
 		{
 			ccr_val = (RCC_GetPCLK1Value() / (3 * pI2CHandle->I2C_Config.I2C_SCLSpeed));
@@ -227,25 +262,53 @@ void I2C_Init(I2C_Handle_t *pI2CHandle)
 }
 
 
+/*******************************************************************.
+ * @fn      		  - I2C_DeInit
+ *
+ * @brief             - This function resets I2C peripheral
+ *
+ * @param[in]         - base address of the I2C peripheral
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
+ */
 void I2C_DeInit(I2C_Reg_t *pI2Cx)
 {
     if(pI2Cx == I2C1)
     {
-        I2C1_PCLOCK_DISABLE();
-    }
-    else if(pI2Cx == I2C2)
+    	I2C1_REG_RESET();
+    }else if(pI2Cx == I2C2)
     {
-        I2C2_PCLOCK_DISABLE();
+    	I2C2_REG_RESET();
     }else if(pI2Cx == I2C3)
     {
-        I2C3_PCLOCK_DISABLE();
+    	I2C3_REG_RESET();
     }
 }
 
 /*
  * Data send and receive
  */
-void I2C_MasterSendData(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr)
+
+/*******************************************************************.
+ * @fn      		  - I2C_MasterSendData
+ *
+ * @brief             - This function transmits data from master to slave
+ *
+ * @param[in]         - base address of the I2C peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ * @param[in]         - slave address
+ * @param[in]         - Repeat start or not @I2C_SR
+ *
+ * @return            -  none
+ *
+ * @Note              -
+ */
+void I2C_MasterSendData(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t Sr)
 {
 	//1 generate the start condition
 	I2C_GenerateStartCondition(pI2CHandle ->pI2Cx);
@@ -279,12 +342,28 @@ void I2C_MasterSendData(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t L
 	while(! I2C_GetFlagStatus(pI2CHandle ->pI2Cx, I2C_FLAG_TXE));
 	while(! I2C_GetFlagStatus(pI2CHandle ->pI2Cx, I2C_FLAG_BTF));
 
-
 	//8 stop condition
-	I2C_GenerateStopCondition(pI2CHandle ->pI2Cx);
+	if(Sr == I2C_DISABLE_SR)
+		I2C_GenerateStopCondition(pI2CHandle ->pI2Cx);
 }
 
-void I2C_MasterReceiveData(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr)
+
+/*******************************************************************.
+ * @fn      		  - I2C_MasterReceiveData
+ *
+ * @brief             - This function receives data from master to slave
+ *
+ * @param[in]         - base address of the I2C peripheral
+ * @param[in]         - address of Rx buffer
+ * @param[in]         - data length
+ * @param[in]         - slave address
+ * @param[in]         - Repeat start or not @I2C_SR
+ *
+ * @return            -  none
+ *
+ * @Note              -
+ */
+void I2C_MasterReceiveData(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t Sr)
 {
 	//1 generate the start condition
 	I2C_GenerateStartCondition(pI2CHandle ->pI2Cx);
@@ -312,12 +391,11 @@ void I2C_MasterReceiveData(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_
 		while(! I2C_GetFlagStatus(pI2CHandle -> pI2Cx, I2C_FLAG_RXNE));
 
 		//generate STOP condition
-		I2C_GenerateStopCondition(pI2CHandle ->pI2Cx);
+		if(Sr == I2C_DISABLE_SR)
+			I2C_GenerateStopCondition(pI2CHandle ->pI2Cx);
 
 		//read data in to buffer
 		*pRxBuffer = pI2CHandle ->pI2Cx ->I2C_DR;
-
-		return;
 	}
 
 	//procedure to read data from slave when Len > 1
@@ -337,7 +415,8 @@ void I2C_MasterReceiveData(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_
 				//disable ack
 				I2C_ManageAcking(pI2CHandle ->pI2Cx, I2C_ACK_DISABLE);
 				//generate STOP condition
-				I2C_GenerateStopCondition(pI2CHandle ->pI2Cx);
+				if(Sr == I2C_DISABLE_SR)
+					I2C_GenerateStopCondition(pI2CHandle ->pI2Cx);
 			}
 
 			//read the data from data register in to buffer
@@ -348,6 +427,11 @@ void I2C_MasterReceiveData(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_
 		}
 	}
 
+	//re-enable ack
+	if(pI2CHandle->I2C_Config.I2C_ACKControl == I2C_ACK_ENABLE)
+	{
+		I2C_ManageAcking(pI2CHandle ->pI2Cx, I2C_ACK_ENABLE);
+	}
 }
 
 
@@ -367,6 +451,20 @@ void I2C_ManageAcking(I2C_Reg_t *pI2Cx, uint8_t En_Or_Di)
 }
 
 
+/*******************************************************************.
+ * @fn      		  - I2C_MasterSendDataIT
+ *
+ * @brief             - This function transmits data with interrupt
+ *
+ * @param[in]         - base address of the I2C peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ * @param[in]         - slave address
+ * @param[in]         - Repeat start or not @I2C_SR
+ * @return            - state
+ *
+ * @Note              -  This is non blocking call
+ */
 uint8_t I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t Sr)
 {
 	uint8_t busystate = pI2CHandle -> TxRxState;
@@ -392,9 +490,23 @@ uint8_t I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint3
 		pI2CHandle ->pI2Cx -> I2C_CR2 |= (1 << I2C_CR2_ITERREN);
 	}
 	return busystate;
-
 }
 
+
+/*******************************************************************.
+ * @fn      		  - I2C_MasterReceiveDataIT
+ *
+ * @brief             - This function receives data with interrupt
+ *
+ * @param[in]         - base address of the I2C peripheral
+ * @param[in]         - address of Rx buffer
+ * @param[in]         - data length
+ * @param[in]         - slave address
+ * @param[in]         - Repeat start or not @I2C_SR
+ * @return            - state
+ *
+ * @Note              -  This is non blocking call
+ */
 uint8_t I2C_MasterReceiveDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t Sr)
 {
 	uint8_t busystate = pI2CHandle->TxRxState;
@@ -411,7 +523,6 @@ uint8_t I2C_MasterReceiveDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, ui
 		//Implement code to Generate START Condition
 		I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
 
-
 		// enable ITBUFEN
 		pI2CHandle ->pI2Cx -> I2C_CR2 |= (1 << I2C_CR2_ITBUFEN);
 
@@ -422,9 +533,22 @@ uint8_t I2C_MasterReceiveDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, ui
 		pI2CHandle ->pI2Cx -> I2C_CR2 |= (1 << I2C_CR2_ITERREN);
 	}
 	return busystate;
-
 }
 
+
+/*******************************************************************.
+ * @fn      		  - I2C_EV_IRQHandling
+ *
+ * @brief             - Interrupt handling for interrupts generated by I2C events
+ *
+ * @param[in]         - base address of the I2C peripheral
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            - none
+ *
+ * @Note              - none
+ */
 void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 {
 	//Interrupt handling for both master and slave mode of a device
@@ -514,15 +638,7 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 			// TXE flag is set
 			if(pI2CHandle->TxRxState == I2C_BUSY_IN_TX)
 			{
-				if(pI2CHandle ->TxLen > 0)
-				{
-					//load the data in DR
-					pI2CHandle->pI2Cx->I2C_DR = *(pI2CHandle->pTxBuffer);
-					// decrement txlen
-					pI2CHandle->TxLen--;
-					// increment buffer address
-					pI2CHandle->pTxBuffer++;
-				}
+				I2C_MasterHandlerTXNEInterrupt(pI2CHandle);
 			}
 		}else
 		{
@@ -548,40 +664,7 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 			// RXNE flag is set
 			if(pI2CHandle->TxRxState == I2C_BUSY_IN_RX)
 			{
-				if(pI2CHandle->RxSize == 1)
-				{
-					*pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->I2C_DR;
-					pI2CHandle->RxLen--;
-				}
-
-				if(pI2CHandle->RxSize > 1)
-				{
-					if(pI2CHandle->RxLen == 2)
-					{
-						//clear ack bit
-						I2C_ManageAcking(pI2CHandle->pI2Cx, DISABLE);
-					}
-
-					//read DR
-					*pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->I2C_DR;
-					pI2CHandle ->pRxBuffer++;
-					pI2CHandle ->RxLen--;
-				}
-
-				if(pI2CHandle->RxLen == 0)
-				{
-					//close the I2C data reception and notify the application
-					//1 generate stop condition
-					if(pI2CHandle->Sr == I2C_DISABLE_SR)
-					{
-						I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
-					}
-					//2 close the I2C rx
-					I2C_CloseReceiveData(pI2CHandle);
-
-					//3	notify application the Stop is detected
-					I2C_ApplicationEventCallBack(pI2CHandle, I2C_EV_RX_CMPLT);
-				}
+				I2C_MasterHandlerRXNEInterrupt(pI2CHandle);
 			}
 		}else
 		{
@@ -597,7 +680,74 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 }
 
 
+/**************Helpper func******************/
+static void I2C_MasterHandlerTXNEInterrupt(I2C_Handle_t *pI2CHandle)
+{
+	if(pI2CHandle ->TxLen > 0)
+	{
+		//load the data in DR
+		pI2CHandle->pI2Cx->I2C_DR = *(pI2CHandle->pTxBuffer);
+		// decrement txlen
+		pI2CHandle->TxLen--;
+		// increment buffer address
+		pI2CHandle->pTxBuffer++;
+	}
+}
 
+
+static void I2C_MasterHandlerRXNEInterrupt(I2C_Handle_t *pI2CHandle)
+{
+	if(pI2CHandle->RxSize == 1)
+	{
+		*pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->I2C_DR;
+		pI2CHandle->RxLen--;
+	}
+
+	if(pI2CHandle->RxSize > 1)
+	{
+		if(pI2CHandle->RxLen == 2)
+		{
+			//clear ack bit
+			I2C_ManageAcking(pI2CHandle->pI2Cx, DISABLE);
+		}
+
+		//read DR
+		*pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->I2C_DR;
+		pI2CHandle ->pRxBuffer++;
+		pI2CHandle ->RxLen--;
+	}
+
+	if(pI2CHandle->RxLen == 0)
+	{
+		//close the I2C data reception and notify the application
+		//1 generate stop condition
+		if(pI2CHandle->Sr == I2C_DISABLE_SR)
+		{
+			I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
+		}
+		//2 close the I2C rx
+		I2C_CloseReceiveData(pI2CHandle);
+
+		//3	notify application the Stop is detected
+		I2C_ApplicationEventCallBack(pI2CHandle, I2C_EV_RX_CMPLT);
+	}
+}
+
+
+
+/*******************************************************************.
+ * @fn      		  - I2C_ER_IRQHandling
+ *
+ * @brief             - Interrupt handling for interrupts generated by I2C error
+ *
+ * @param[in]         - base address of the I2C peripheral
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            - none
+ *
+ * @Note              - none
+ */
 void I2C_ER_IRQHandling(I2C_Handle_t *pI2CHandle)
 {
 	uint32_t temp1,temp2;
@@ -708,7 +858,7 @@ void I2C_IRQITConfig(uint8_t IRQNumber, uint8_t En_or_Di)
 
 }
 
-void I2C_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority)
+void I2C_IRQPriorityConfig(uint8_t IRQNumber, uint32_t IRQPriority)
 {
 	//1. first lets find out the ipr register
 	uint8_t iprx = IRQNumber / 4;

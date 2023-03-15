@@ -14,19 +14,19 @@
  */
 typedef struct
 {
-	uint8_t SPI_DeviceMode;
-	uint8_t SPI_BusConfig;
-	uint8_t SPI_SclkSpeed;
-	uint8_t SPI_DFF;
-	uint8_t SPI_CPOL;
-	uint8_t SPI_CPHA;
-	uint8_t SPI_SSM;
+	uint8_t SPI_DeviceMode;		/*!< 	possible values from @SPI_DeviceMode 		>*/
+	uint8_t SPI_BusConfig;		/*!< 	possible values from @SPI_BusConfig 		>*/
+	uint8_t SPI_SclkSpeed;		/*!< 	possible values from @SPI_SclkSpeed 		>*/
+	uint8_t SPI_DFF;			/*!< 	possible values from @SPI_DFF 				>*/
+	uint8_t SPI_CPOL;			/*!< 	possible values from @SPI_CPOL 				>*/
+	uint8_t SPI_CPHA;			/*!< 	possible values from @SPI_CPHA 				>*/
+	uint8_t SPI_SSM;			/*!< 	possible values from @SPI_SSM 				>*/
 }SPI_Config_t;
+
 
 /*
  * Handle structure for SPI peripheral
  */
-
 typedef struct
 {
 	SPI_Reg_t		*pSPIx;
@@ -101,8 +101,8 @@ typedef struct
 /*
  * @SPI_SSM
  */
-#define SPI_SSM_EN		1
-#define SPI_SSM_DI		0
+#define SPI_SSM_EN		1 //hw
+#define SPI_SSM_DI		0 //sw
 
 
 /*
@@ -115,9 +115,10 @@ typedef struct
 
 
 
-/*
- * APIs SUPPORTED FOR THIS DRIVER
- */
+/********************************************
+ * APIs SUPPORTED FOR THIS DRIVER           *
+ ********************************************/
+
 /*
  * Peripheral Clock setup
  */
@@ -132,7 +133,6 @@ void SPI_DeInit(SPI_Reg_t *pSPIx);
 /*
  * Data send and receive
  */
-
 uint8_t SPI_GetFlagStatus(SPI_Reg_t *pSPIx, uint32_t FlagName);
 void SPI_SendData(SPI_Reg_t *pSPIx, uint8_t *pTxBuffer, uint32_t Len);
 void SPI_ReceiveData(SPI_Reg_t *pSPIx, uint8_t *pRxBuffer, uint32_t Len);
@@ -143,9 +143,8 @@ uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t
 /*
  * IQR configuration and ISR handling
  */
-
 void SPI_IRQITConfig(uint8_t IRQNumber, uint8_t En_or_Di);
-void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority);
+void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint32_t IRQPriority);
 void SPI_IRQHandling(SPI_Handle_t *pSPIHandle);
 
 /*

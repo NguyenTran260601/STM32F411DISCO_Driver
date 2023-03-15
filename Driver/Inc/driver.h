@@ -296,6 +296,26 @@ typedef struct
 #define GPIOE_REG_RESET() 		do{ (RCC -> AHB1RSTR |= (1 << 4)); (RCC -> AHB1RSTR &= ~(1 << 4)); }while(0)
 #define GPIOH_REG_RESET() 		do{ (RCC -> AHB1RSTR |= (1 << 7)); (RCC -> AHB1RSTR &= ~(1 << 5)); }while(0)
 
+/*******************************RESET SPI**************************/
+#define SPI1_REG_RESET()		do{ (RCC -> APB2RSTR |= (1 << 12)); (RCC -> APB2RSTR &= ~(1 << 12)); }while(0)
+#define SPI2_REG_RESET()		do{ (RCC -> APB1RSTR |= (1 << 14)); (RCC -> APB1RSTR &= ~(1 << 14)); }while(0)
+#define SPI3_REG_RESET()		do{ (RCC -> APB1RSTR |= (1 << 15)); (RCC -> APB1RSTR &= ~(1 << 15)); }while(0)
+#define SPI4_REG_RESET()		do{ (RCC -> APB2RSTR |= (1 << 13)); (RCC -> APB2RSTR &= ~(1 << 13)); }while(0)
+#define SPI5_REG_RESET()		do{ (RCC -> APB2RSTR |= (1 << 20)); (RCC -> APB2RSTR &= ~(1 << 20)); }while(0)
+
+/*******************************RESET I2C**************************/
+#define I2C1_REG_RESET()		do{ (RCC -> APB1RSTR |= (1 << 21)); (RCC -> APB1RSTR &= ~(1 << 21)); }while(0)
+#define I2C2_REG_RESET()		do{ (RCC -> APB1RSTR |= (1 << 22)); (RCC -> APB1RSTR &= ~(1 << 22)); }while(0)
+#define I2C3_REG_RESET()		do{ (RCC -> APB1RSTR |= (1 << 23)); (RCC -> APB1RSTR &= ~(1 << 23)); }while(0)
+
+/*******************************RESET UART**************************/
+#define USART1_REG_RESET()		do{ (RCC -> APB2RSTR |= (1 << 4)); 	(RCC -> APB2ENR &= ~(1 << 4)); }while(0)
+#define USART2_REG_RESET()		do{ (RCC -> APB1RSTR |= (1 << 17)); (RCC -> APB1ENR &= ~(1 << 17)); }while(0)
+#define USART6_REG_RESET()		do{ (RCC -> APB2RSTR |= (1 << 5)); 	(RCC -> APB2ENR &= ~(1 << 5)); }while(0)
+
+
+
+
 /*************Return port code for GPIOx base address***************/
 #define GPIO_BASEADDR_TO_CODE(x)	   ((x == GPIOA)?0:\
 										(x == GPIOB)?1:\
@@ -329,7 +349,7 @@ typedef struct
 #define IRQ_NO_I2C3_ER     	73
 
 #define IRQ_NO_USART1	    37
-#define IRQ_NO_USART3	    39
+#define IRQ_NO_USART2		38
 #define IRQ_NO_USART6	    71
 
 /*******************Some macro possible priority********************/
@@ -355,7 +375,7 @@ typedef struct
  *Macro for some SPI_Register
  */
 
-/*********************some macro SPI_SR register********************/
+/*********************some macro(bit position) SPI_CR1 register********************/
 #define SPI_CR1_CPHA		0
 #define SPI_CR1_CPOL		1
 #define SPI_CR1_MSTR		2
@@ -371,7 +391,7 @@ typedef struct
 #define SPI_CR1_BIDIOE		14
 #define SPI_CR1_BIDIMODE	15
 
-/*****************Some macro SPI_CR2 register***********************/
+/*****************Some macro(bit position) SPI_CR2 register***********************/
 #define SPI_CR2_RXDMAEN		0
 #define SPI_CR2_TXDMAEN		1
 #define SPI_CR2_SSOE		2
@@ -381,7 +401,7 @@ typedef struct
 #define SPI_CR2_RXNEIE		6
 #define SPI_CR2_TXEIE		7
 
-/****************Some macro SPI_SR register*************************/
+/****************Some macro(bit position) SPI_SR register*************************/
 #define SPI_SR_RXNE			0
 #define SPI_SR_TXE			1
 #define SPI_SR_CHSEDE		2
@@ -396,7 +416,7 @@ typedef struct
  *Macro for some I2C_Register
  */
 
-/****************Some macro I2C_CR1 register*************************/
+/****************Some macro(bit position) I2C_CR1 register*************************/
 #define I2C_CR1_PE			0
 #define I2C_CR1_SMBUS		1
 #define I2C_CR1_SMBTYPE		3
@@ -412,13 +432,13 @@ typedef struct
 #define I2C_CR1_ALERT		13
 #define I2C_CR1_SWRST		15
 
-/****************Some macro I2C_CR2 register*************************/
+/****************Some macro(bit position) I2C_CR2 register*************************/
 #define I2C_CR2_FREQ		0
 #define I2C_CR2_ITERREN		8
 #define I2C_CR2_ITEVTEN		9
 #define I2C_CR2_ITBUFEN 	10
 
-/****************Some macro I2C_SR1 register*************************/
+/****************Some macro(bit position) I2C_SR1 register*************************/
 #define I2C_SR1_SB			0
 #define I2C_SR1_ADDR		1
 #define I2C_SR1_BTF			2
@@ -432,18 +452,27 @@ typedef struct
 #define I2C_SR1_OVR			11
 #define I2C_SR1_TIMEOUT		14
 
-/****************Some macro I2C_SR2 register*************************/
+/****************Some macro(bit position) I2C_SR2 register*************************/
 #define I2C_SR2_MSL						0
 #define I2C_SR2_BUSY 					1
 #define I2C_SR2_TRA 					2
 #define I2C_SR2_GENCALL 				4
 #define I2C_SR2_DUALF 					7
 
+/****************Some macro(bit position) I2C_OAR1 register*************************/
+#define I2C_OAR1_ADD					1
+#define I2C_OAR1_BIT14					14
+
+/****************Some macro(bit position) I2C_CCR register*************************/
+#define I2C_CCR_DUTY					14
+#define I2C_CCR_FS						15
+
+
 
 /*
  *Macro for some USART_Register
  */
-/****************Some macro USART_SR register************************/
+/****************Some macro(bit position) USART_SR register************************/
 #define USART_SR_PE						0
 #define USART_SR_FE						1
 #define USART_SR_NF						2
@@ -455,7 +484,7 @@ typedef struct
 #define USART_SR_LBD					8
 #define USART_SR_CTS					9
 
-/****************Some macro USART_CR1 register***********************/
+/****************Some macro(bit position) USART_CR1 register***********************/
 #define USART_CR1_SBK					0
 #define USART_CR1_RWU 					1
 #define USART_CR1_RE  					2
@@ -485,7 +514,7 @@ typedef struct
 #define USART_CR2_LINEN   				14
 
 
-/****************Some macro USART_CR3 register***********************/
+/****************Some macro(bit position) USART_CR3 register***********************/
 #define USART_CR3_EIE   				0
 #define USART_CR3_IREN   				1
 #define USART_CR3_IRLP  				2

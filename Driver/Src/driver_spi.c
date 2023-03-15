@@ -10,8 +10,19 @@ static void spi_txe_interupt_handle(SPI_Handle_t *pSPIHandle);
 static void spi_rxne_interupt_handle(SPI_Handle_t *pSPIHandle);
 static void spi_ovr_err_interupt_handle(SPI_Handle_t *pSPIHandle);
 
-/*
- * Peripheral Clock setup
+
+/**************************Peripheral Clock Setup*******************
+ * @fn      		  - SPI_PeriClockControl
+ *
+ * @brief             - This function enables or disables peripheral clock for the given SPI port
+ *
+ * @param[in]         - base address of the SPI peripheral
+ * @param[in]         - ENABLE or DISABLE macros
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
  */
 void SPI_PeriClockControl(SPI_Reg_t *pSPIx, uint8_t En_or_Di)
 {
@@ -36,25 +47,54 @@ void SPI_PeriClockControl(SPI_Reg_t *pSPIx, uint8_t En_or_Di)
 			}
 		}else
 		{
-			//
+			if(pSPIx == SPI1)
+			{
+				SPI1_PCLOCK_DISABLE();
+			}
+			else if(pSPIx == SPI2)
+			{
+				SPI2_PCLOCK_DISABLE();
+			}else if(pSPIx == SPI3)
+			{
+				SPI3_PCLOCK_DISABLE();
+			}else if(pSPIx == SPI4)
+			{
+				SPI4_PCLOCK_DISABLE();
+			}else if(pSPIx == SPI5)
+			{
+				SPI5_PCLOCK_DISABLE();
+			}
 		}
 }
 
-/*
- * Init and De_init
+
+/* Init and De_init */
+
+/************************************************************************
+ * @fn      		  - SPI_Init
+ *
+ * @brief             -
+ *
+ * @param[in]         - base address of the SPI handle
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
  */
 void SPI_Init(SPI_Handle_t *pSPIHandle)
 {
-	//config SPI_CR1 register
-	uint32_t temp = 0;
-
 	//enable peripheral clock
 	SPI_PeriClockControl(pSPIHandle ->pSPIx, ENABLE);
 
-	//config device mode
+	/* config SPI_CR1 register */
+	uint32_t temp = 0;
+
+	//1.config device mode
 	temp |= pSPIHandle -> SPIConfig.SPI_DeviceMode << SPI_CR1_MSTR;
 
-	//config bus
+	//2.config bus
 	if(pSPIHandle -> SPIConfig.SPI_BusConfig == SPI_BUS_CONFIG_FD)
 	{
 		//bidi mode should be cleared
@@ -71,43 +111,77 @@ void SPI_Init(SPI_Handle_t *pSPIHandle)
 		temp |= (1 << SPI_CR1_RXONLY);
 	}
 
-	// config spi serial clock speed (baud rate)
+	//3.config spi serial clock speed (baud rate)
 	temp |= pSPIHandle -> SPIConfig.SPI_SclkSpeed << SPI_CR1_BR;
 
-	// config DFF
+	//4.config DFF
 	temp |= pSPIHandle -> SPIConfig.SPI_DFF << SPI_CR1_DFF;
 
-	// config CPOL
+	//5.config CPOL
 	temp |= pSPIHandle -> SPIConfig.SPI_CPOL << SPI_CR1_CPOL;
 
-	// config CPHA
+	//6.config CPHA
 	temp |= pSPIHandle -> SPIConfig.SPI_CPHA << SPI_CR1_CPHA;
+
+	//7. config SSM
+	temp |= pSPIHandle -> SPIConfig.SPI_SSM << SPI_CR1_SSM;
 
 	pSPIHandle -> pSPIx -> SPI_CR1 = temp;
 }
 
 
+/*******************************************************************.
+ * @fn      		  - SPI_DeInit
+ *
+ * @brief             - This function resets SPI peripheral
+ *
+ * @param[in]         - base address of the SPI peripheral
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
+ */
 void SPI_DeInit(SPI_Reg_t *pSPIx)
 {
 	if(pSPIx == SPI1)
 	{
-		SPI1_PCLOCK_DISABLE();
+		SPI1_REG_RESET();
 	}
 	else if(pSPIx == SPI2)
 	{
-		SPI2_PCLOCK_DISABLE();
+		SPI2_REG_RESET();
 	}else if(pSPIx == SPI3)
 	{
-		SPI3_PCLOCK_DISABLE();
+		SPI3_REG_RESET();
 	}else if(pSPIx == SPI4)
 	{
-		SPI4_PCLOCK_DISABLE();
+		SPI4_REG_RESET();
 	}else if(pSPIx == SPI5)
 	{
-		SPI5_PCLOCK_DISABLE();
+		SPI5_REG_RESET();
 	}
 }
 
+
+/*
+ * Data send and receive
+ */
+
+/*******************************************************************.
+ * @fn      		  - SPI_GetFlagStatus
+ *
+ * @brief             - This is helper function get flag status
+ *
+ * @param[in]         - base address of the SPI peripheral
+ * @param[in]         - flag name
+ * @param[in]         -
+ *
+ * @return            -  Flag set or reset
+ *
+ * @Note              -  none
+ */
 uint8_t SPI_GetFlagStatus(SPI_Reg_t *pSPIx, uint32_t FlagName)
 {
 	if(pSPIx -> SPI_SR & FlagName)
@@ -117,14 +191,25 @@ uint8_t SPI_GetFlagStatus(SPI_Reg_t *pSPIx, uint32_t FlagName)
 	return FLAG_RESET;
 }
 
-/*
- * Data send and receive
+
+/*******************************************************************.
+ * @fn      		  - SPI_SendData
+ *
+ * @brief             - This function transmits data
+ *
+ * @param[in]         - base address of the SPI peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ *
+ * @return            -  none
+ *
+ * @Note              -  This is blocking call
  */
 void SPI_SendData(SPI_Reg_t *pSPIx, uint8_t *pTxBuffer, uint32_t Len)
 {
 	while(Len > 0)
 	{
-		//1. wait until TXE is set
+		//1. wait until TXE is set (TX buffer is empty)
 		while(SPI_GetFlagStatus(pSPIx, SPI_TXE_FLAG) == FLAG_RESET);
 
 		//2. check the bit in CR1
@@ -144,14 +229,29 @@ void SPI_SendData(SPI_Reg_t *pSPIx, uint8_t *pTxBuffer, uint32_t Len)
 			pTxBuffer++;
 		}
 	}
-
 }
 
+
+
+
+/*******************************************************************.
+ * @fn      		  - SPI_ReceiveData
+ *
+ * @brief             - This function receives data
+ *
+ * @param[in]         - base address of the SPI peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ *
+ * @return            -  none
+ *
+ * @Note              -  This is blocking call
+ */
 void SPI_ReceiveData(SPI_Reg_t *pSPIx, uint8_t *pRxBuffer, uint32_t Len)
 {
 	while(Len > 0)
 	{
-		//1. wait until RXEN is set
+		//1. wait until RXEN is set (Rx buffer is not empty)
 		while(SPI_GetFlagStatus(pSPIx, SPI_RXNE_FLAG) == FLAG_RESET);
 
 		//2. check the bit in CR1
@@ -174,6 +274,19 @@ void SPI_ReceiveData(SPI_Reg_t *pSPIx, uint8_t *pRxBuffer, uint32_t Len)
 }
 
 
+/*******************************************************************.
+ * @fn      		  - SPI_SendDataIT
+ *
+ * @brief             - This function transmits data with interrupt
+ *
+ * @param[in]         - base address of the SPI peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ *
+ * @return            -  state
+ *
+ * @Note              -  This is non blocking call
+ */
 uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t Len)
 {
 	uint8_t state = pSPIHandle -> TxState;
@@ -192,6 +305,19 @@ uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t Le
 	return state;
 }
 
+/*******************************************************************.
+ * @fn      		  - SPI_ReceiveDataIT
+ *
+ * @brief             - This function receives data
+ *
+ * @param[in]         - base address of the SPI peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ *
+ * @return            -  state
+ *
+ * @Note              -  This is non blocking call
+ */
 uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Len)
 {
 	uint8_t state = pSPIHandle -> RxState;
@@ -215,6 +341,20 @@ uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t
 
 /*
  * IQR configuration and ISR handling
+ */
+
+/*******************************************************************.
+ * @fn      		  - SPI_IRQITConfig
+ *
+ * @brief             - This function enables IRQ number
+ *
+ * @param[in]         - IRQ number
+ * @param[in]         - ENABLE or DISABLE
+ * @param[in]         -
+ *
+ * @return            - none
+ *
+ * @Note              - none
  */
 void SPI_IRQITConfig(uint8_t IRQNumber, uint8_t En_or_Di)
 {
@@ -254,7 +394,21 @@ void SPI_IRQITConfig(uint8_t IRQNumber, uint8_t En_or_Di)
 	}
 }
 
-void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority)
+
+/*******************************************************************.
+ * @fn      		  - SPI_IRQPriorityConfig
+ *
+ * @brief             - This function configures IRQ priority
+ *
+ * @param[in]         - IRQ number
+ * @param[in]         - IRQPriority
+ * @param[in]         -
+ *
+ * @return            - none
+ *
+ * @Note              - none
+ */
+void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint32_t IRQPriority)
 {
 	//1. first lets find out the ipr register
 	uint8_t iprx = IRQNumber / 4;
@@ -266,6 +420,20 @@ void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority)
 
 }
 
+
+/*******************************************************************.
+ * @fn      		  - SPI_IRQHandling
+ *
+ * @brief             - This function handles IRQ
+ *
+ * @param[in]         - base address of the SPI peripheral
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            - none
+ *
+ * @Note              - none
+ */
 void SPI_IRQHandling(SPI_Handle_t *pSPIHandle)
 {
 	uint8_t temp1, temp2;

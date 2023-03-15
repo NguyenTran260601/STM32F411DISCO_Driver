@@ -7,8 +7,94 @@
 
 #include "driver.h"
 
-/*
- * Peripheral Clock setup
+/*********************************************************************
+ * @fn      		  - USART_SetBaudRate
+ *
+ * @brief             -
+ *
+ * @param[in]         -
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -
+ *
+ * @Note              -
+ */
+void USART_SetBaudRate(USART_Reg_t *pUSARTx, uint32_t BaudRate)
+{
+	//Variable to hold the APB clock
+	uint32_t PCLKx;
+
+	uint32_t usartdiv;
+
+	//variables to hold Mantissa and Fraction values
+	uint32_t M_part,F_part;
+
+	uint32_t temp = 0;
+
+	//Get the value of APB bus clock in to the variable PCLKx
+	if(pUSARTx == USART1 || pUSARTx == USART6)
+	{
+	   //USART1 and USART6 are hanging on APB2 bus
+	   PCLKx = RCC_GetPCLK2Value();
+	}else
+	{
+	   PCLKx = RCC_GetPCLK1Value();
+	}
+
+	//Check for OVER8 configuration bit
+	if(pUSARTx->USART_CR1 & (1 << USART_CR1_OVER8))
+	{
+	   //OVER8 = 1 , over sampling by 8
+	   usartdiv = ((25 * PCLKx) / (2 *BaudRate));
+	}else
+	{
+	   //over sampling by 16
+	   usartdiv = ((25 * PCLKx) / (4 *BaudRate));
+	}
+
+	//Calculate the Mantissa part
+	M_part = usartdiv/100;
+
+	//Place the Mantissa part in appropriate bit position . refer USART_BRR
+	temp |= M_part << 4;
+
+	//Extract the fraction part
+	F_part = (usartdiv - (M_part * 100));
+
+	//Calculate the final fractional
+	if(pUSARTx->USART_CR1 & ( 1 << USART_CR1_OVER8))
+	{
+	  //OVER8 = 1 , over sampling by 8
+	  F_part = ((( F_part * 8)+ 50) / 100)& ((uint8_t)0x07);
+
+	}else
+	{
+	   //over sampling by 16
+	   F_part = ((( F_part * 16)+ 50) / 100) & ((uint8_t)0x0F);
+
+	}
+
+	//Place the fractional part in appropriate bit position . refer USART_BRR
+	temp |= F_part;
+
+	//copy the value of tempreg in to BRR register
+	pUSARTx->USART_BRR = temp;
+
+}
+
+/**************************Peripheral Clock Setup*******************
+ * @fn      		  - USART_PeriClockControl
+ *
+ * @brief             - This function enables or disables peripheral clock for the given UART port
+ *
+ * @param[in]         - base address of the UART peripheral
+ * @param[in]         - ENABLE or DISABLE macros
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
  */
 void USART_PeriClockControl(USART_Reg_t *pUSARTx, uint8_t En_or_Di)
 {
@@ -17,8 +103,7 @@ void USART_PeriClockControl(USART_Reg_t *pUSARTx, uint8_t En_or_Di)
 			if(pUSARTx == USART1)
 			{
 				USART1_PCLOCK_ENABLE();
-			}
-			else if(pUSARTx == USART2)
+			}else if(pUSARTx == USART2)
 			{
 				USART2_PCLOCK_ENABLE();
 			}else if(pUSARTx == USART6)
@@ -27,12 +112,35 @@ void USART_PeriClockControl(USART_Reg_t *pUSARTx, uint8_t En_or_Di)
 			}
 		}else
 		{
-			//
+			if(pUSARTx == USART1)
+			{
+				USART1_PCLOCK_DISABLE();
+			}else if(pUSARTx == USART2)
+			{
+				USART2_PCLOCK_DISABLE();
+			}else if(pUSARTx == USART6)
+			{
+				USART6_PCLOCK_DISABLE();
+			}
 		}
 }
 
 /*
  * Init and De-init
+ */
+
+/************************************************************************
+ * @fn      		  - USART_Init
+ *
+ * @brief             -
+ *
+ * @param[in]         - base address of the UART handle
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
  */
 void USART_Init(USART_Handle_t *pUSARTHandle)
 {
@@ -79,19 +187,15 @@ void USART_Init(USART_Handle_t *pUSARTHandle)
 	//CR1
 	pUSARTHandle->pUSARTx->USART_CR1 = temp;
 
-	/*
-	 * configure CR2
-	 */
-
+	/*********configure CR2************/
 	temp = 0;
 
 	//Implement the code to configure the number of stop bits inserted during USART frame transmission
 	temp |= pUSARTHandle->USART_Config.USART_NoOfStopBits << USART_CR2_STOP;
+
 	pUSARTHandle->pUSARTx->USART_CR2 = temp;
 
-	/*
-	 * configure CR3
-	 */
+	/*********configure CR3************/
 	temp = 0;
 
 	//Configuration of USART hardware flow control
@@ -99,7 +203,6 @@ void USART_Init(USART_Handle_t *pUSARTHandle)
 	{
 		//Implement the code to enable CTS flow control
 		temp |= ( 1 << USART_CR3_CTSE);
-
 
 	}else if (pUSARTHandle->USART_Config.USART_HWFlowControl == USART_HW_FLOW_CTRL_RTS)
 	{
@@ -119,23 +222,49 @@ void USART_Init(USART_Handle_t *pUSARTHandle)
 	USART_SetBaudRate(pUSARTHandle->pUSARTx,pUSARTHandle->USART_Config.USART_Baud);
 }
 
+/************************************************************************
+ * @fn      		  - USART_DeInit
+ *
+ * @brief             -
+ *
+ * @param[in]         - base address of the UART handle
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
+ */
 void USART_DeInit(USART_Reg_t *pUSARTx)
 {
 	if(pUSARTx == USART1)
 	{
-		USART1_PCLOCK_DISABLE();
+		USART1_REG_RESET();
 	}
 	else if(pUSARTx == USART2)
 	{
-		USART2_PCLOCK_DISABLE();
+		USART2_REG_RESET();
 	}else if(pUSARTx == USART6)
 	{
-		USART6_PCLOCK_DISABLE();
+		USART6_REG_RESET();
 	}	
 }
 
 /*
  * Data Send and Receive
+ */
+
+/*******************************************************************.
+ * @fn      		  - USART_SendData
+ *
+ * @brief             - This function transmits data
+ * @param[in]         - base address of the UART peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ *
+ * @return            -  none
+ *
+ * @Note              -
  */
 void USART_SendData(USART_Handle_t *pUSARTHandle, uint8_t *pTxBuffer, uint32_t Len)
 {
@@ -184,6 +313,19 @@ void USART_SendData(USART_Handle_t *pUSARTHandle, uint8_t *pTxBuffer, uint32_t L
 
 }
 
+
+/*******************************************************************.
+ * @fn      		  - USART_ReceiveData
+ *
+ * @brief             - This function receives data
+ * @param[in]         - base address of the UART peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ *
+ * @return            -  none
+ *
+ * @Note              -
+ */
 void  USART_ReceiveData(USART_Handle_t *pUSARTHandle,uint8_t *pRxBuffer, uint32_t Len)
 {
 	//Loop over until "Len" number of bytes are transferred
@@ -240,6 +382,19 @@ void  USART_ReceiveData(USART_Handle_t *pUSARTHandle,uint8_t *pRxBuffer, uint32_
 	}
 }
 
+
+/*******************************************************************.
+ * @fn      		  - USART_SendDataIT
+ *
+ * @brief             - This function sends data with interrupt
+ * @param[in]         - base address of the UART peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ *
+ * @return            -  state
+ *
+ * @Note              -
+ */
 uint8_t USART_SendDataIT(USART_Handle_t *pUSARTHandle,uint8_t *pTxBuffer, uint32_t Len)
 {
 	uint8_t txstate = pUSARTHandle->TxBusyState;
@@ -263,6 +418,19 @@ uint8_t USART_SendDataIT(USART_Handle_t *pUSARTHandle,uint8_t *pTxBuffer, uint32
 
 }
 
+
+/*******************************************************************.
+ * @fn      		  - USART_ReceiveDataIT
+ *
+ * @brief             - This function receives data with interrupt
+ * @param[in]         - base address of the UART peripheral
+ * @param[in]         - address of Tx buffer
+ * @param[in]         - data length
+ *
+ * @return            -  state
+ *
+ * @Note              -
+ */
 uint8_t USART_ReceiveDataIT(USART_Handle_t *pUSARTHandle,uint8_t *pRxBuffer, uint32_t Len)
 {
 	uint8_t rxstate = pUSARTHandle->RxBusyState;
@@ -281,6 +449,7 @@ uint8_t USART_ReceiveDataIT(USART_Handle_t *pUSARTHandle,uint8_t *pRxBuffer, uin
 
 	return rxstate;
 }
+
 
 /*
  * IRQ Configuration and ISR handling
@@ -650,68 +819,7 @@ void USART_PeripheralControl(USART_Reg_t *pUSARTx, uint8_t En_or_Di)
 	}
 }
 
-void USART_SetBaudRate(USART_Reg_t *pUSARTx, uint32_t BaudRate)
-{
-	//Variable to hold the APB clock
-	uint32_t PCLKx;
 
-	uint32_t usartdiv;
-
-	//variables to hold Mantissa and Fraction values
-	uint32_t M_part,F_part;
-
-	uint32_t temp = 0;
-
-	//Get the value of APB bus clock in to the variable PCLKx
-	if(pUSARTx == USART1 || pUSARTx == USART6)
-	{
-	   //USART1 and USART6 are hanging on APB2 bus
-	   PCLKx = RCC_GetPCLK2Value();
-	}else
-	{
-	   PCLKx = RCC_GetPCLK1Value();
-	}
-
-	//Check for OVER8 configuration bit
-	if(pUSARTx->USART_CR1 & (1 << USART_CR1_OVER8))
-	{
-	   //OVER8 = 1 , over sampling by 8
-	   usartdiv = ((25 * PCLKx) / (2 *BaudRate));
-	}else
-	{
-	   //over sampling by 16
-	   usartdiv = ((25 * PCLKx) / (4 *BaudRate));
-	}
-
-	//Calculate the Mantissa part
-	M_part = usartdiv/100;
-
-	//Place the Mantissa part in appropriate bit position . refer USART_BRR
-	temp |= M_part << 4;
-
-	//Extract the fraction part
-	F_part = (usartdiv - (M_part * 100));
-
-	//Calculate the final fractional
-	if(pUSARTx->USART_CR1 & ( 1 << USART_CR1_OVER8))
-	{
-	  //OVER8 = 1 , over sampling by 8
-	  F_part = ((( F_part * 8)+ 50) / 100)& ((uint8_t)0x07);
-
-	}else
-	{
-	   //over sampling by 16
-	   F_part = ((( F_part * 16)+ 50) / 100) & ((uint8_t)0x0F);
-
-	}
-
-	//Place the fractional part in appropriate bit position . refer USART_BRR
-	temp |= F_part;
-
-	//copy the value of tempreg in to BRR register
-	pUSARTx->USART_BRR = temp;
-
-}
 
 
 /*

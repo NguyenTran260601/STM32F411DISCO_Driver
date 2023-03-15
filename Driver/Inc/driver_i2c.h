@@ -14,10 +14,10 @@
  */
 typedef struct
 {
-	uint32_t 	I2C_SCLSpeed;
+	uint32_t 	I2C_SCLSpeed;			/*!< 	possible values from @I2C_SCLSpeed 		>*/
 	uint8_t		I2C_DeviceAddress;
-	uint8_t		I2C_ACKControl;
-	uint16_t	I2C_FMDutyCycle;
+	uint8_t		I2C_ACKControl;			/*!< 	possible values from @I2C_ACKControl 		>*/
+	uint16_t	I2C_FMDutyCycle;		/*!< 	possible values from @I2C_FMDutyCycle 		>*/
 }I2C_Config_t;
 
 
@@ -82,6 +82,9 @@ typedef struct
 #define I2C_FLAG_OVR  		( 1 << I2C_SR1_OVR)
 #define I2C_FLAG_TIMEOUT 	( 1 << I2C_SR1_TIMEOUT)
 
+/*
+ * @I2C_SR
+ */
 #define I2C_DISABLE_SR  	RESET
 #define I2C_ENABLE_SR   	SET
 
@@ -115,8 +118,8 @@ void I2C_DeInit(I2C_Reg_t *pI2Cx);
 /*
  * Data send and receive
  */
-void I2C_MasterSendData(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr);
-void I2C_MasterReceiveData(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr);
+void I2C_MasterSendData(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t Sr);
+void I2C_MasterReceiveData(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t Sr);
 
 uint8_t I2C_MasterSendDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t Sr);
 uint8_t I2C_MasterReceiveDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t Sr);
@@ -131,7 +134,7 @@ uint8_t I2C_SlaveReceiveData(I2C_Reg_t *pI2C);
  * IQR configuration and ISR handling
  */
 void I2C_IRQITConfig(uint8_t IRQNumber, uint8_t En_or_Di);
-void I2C_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority);
+void I2C_IRQPriorityConfig(uint8_t IRQNumber, uint32_t IRQPriority);
 void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle);
 void I2C_ER_IRQHandling(I2C_Handle_t *pI2CHandle);
 

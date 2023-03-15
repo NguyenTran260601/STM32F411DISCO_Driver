@@ -1,14 +1,15 @@
 /*
- * gpio_main.c
+ * gpio_test_case2.c
  *
- *  Created on: Jun 16, 2022
+ *  Created on: Mar 6, 2023
  *      Author: Nguyen Tran
  */
 
 
 #include "driver.h"
 
-#define BUTTON_PRESS    1
+#define HIGH_STATE		1
+#define BUTTON_PRESS    HIGH_STATE
 
 void delay(void)
 {
@@ -40,7 +41,6 @@ int main()
 				delay();
 				GPIO_ToggleOutputPin(GPIOD, GPIO_PIN_15);
 			}
-
 	}
 	return 0;
 }

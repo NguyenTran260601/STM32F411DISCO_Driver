@@ -1,16 +1,15 @@
 /*
- * uart_tx_main.c
+ * uart_senddata.c
  *
- *  Created on: July 10, 2022
+ *  Created on: Mar 14, 2023
  *      Author: Nguyen Tran
  */
-
 
 #include<stdio.h>
 #include<string.h>
 #include "driver.h"
 
-char msg[1024] = "UART Tx testing...\n\r";
+char msg[1024] = "Hello world from STM...\n\r";
 
 USART_Handle_t usart2_handle;
 
@@ -44,11 +43,13 @@ void USART2_GPIOInit(void)
 	//USART2 RX
 	usart_gpios.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_3;
 	GPIO_Init(&usart_gpios);
+
+
 }
 
 void GPIO_ButtonInit(void)
 {
-	GPIO_Handle_t GPIOBtn,GpioLed;
+	GPIO_Handle_t GPIOBtn;
 
 	//this is btn gpio configuration
 	GPIOBtn.pGPIOx = GPIOA;
@@ -58,16 +59,6 @@ void GPIO_ButtonInit(void)
 	GPIOBtn.GPIO_PinConfig.GPIO_PinPuPControl = GPIO_NO_PUPD;
 
 	GPIO_Init(&GPIOBtn);
-
-	//this is led gpio configuration
-	GpioLed.pGPIOx = GPIOD;
-	GpioLed.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_12;
-	GpioLed.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_OUTPUT;
-	GpioLed.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
-	GpioLed.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_OD;
-	GpioLed.GPIO_PinConfig.GPIO_PinPuPControl = GPIO_NO_PUPD;
-
-	GPIO_Init(&GpioLed);
 
 }
 
@@ -97,7 +88,6 @@ int main(void)
 		delay();
 
 		USART_SendData(&usart2_handle,(uint8_t*)msg,strlen(msg));
-
     }
 
 	return 0;

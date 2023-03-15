@@ -16,12 +16,12 @@
  */
 typedef struct
 {
-	uint8_t USART_Mode;
-	uint32_t USART_Baud;
-	uint8_t USART_NoOfStopBits;
-	uint8_t USART_WordLength;
-	uint8_t USART_ParityControl;
-	uint8_t USART_HWFlowControl;
+	uint8_t USART_Mode;				/*!< 	possible values from @USART_Mode 				>*/
+	uint32_t USART_Baud;			/*!< 	possible values from @USART_Baud 				>*/
+	uint8_t USART_NoOfStopBits;		/*!< 	possible values from @USART_NoOfStopBits 		>*/
+	uint8_t USART_WordLength;		/*!< 	possible values from @USART_WordLength 			>*/
+	uint8_t USART_ParityControl;	/*!< 	possible values from @USART_ParityControl 		>*/
+	uint8_t USART_HWFlowControl;	/*!< 	possible values from @USART_HWFlowControl 		>*/
 }USART_Config_t;
 
 
@@ -55,7 +55,7 @@ typedef struct
  *Possible options for USART_Baud
  */
 #define USART_STD_BAUD_1200					1200
-#define USART_STD_BAUD_2400					400
+#define USART_STD_BAUD_2400					2400
 #define USART_STD_BAUD_9600					9600
 #define USART_STD_BAUD_19200 				19200
 #define USART_STD_BAUD_38400 				38400

@@ -11,7 +11,19 @@ uint16_t AHB_PreScaler[8] = {2,4,8,16,64,128,256,512};
 uint8_t APB1_PreScaler[4] = { 2, 4 , 8, 16};
 
 
-
+/************************************************************************
+ * @fn      		  - RCC_GetPCLK1Value
+ *
+ * @brief             - This function gets clock source from AHB bus
+ *
+ * @param[in]         -
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  AHB clock
+ *
+ * @Note              -  none
+ */
 uint32_t RCC_GetPCLK1Value(void)
 {
 	uint32_t pclk1, SystemClk;
@@ -59,7 +71,19 @@ uint32_t RCC_GetPCLK1Value(void)
 }
 
 
-
+/************************************************************************
+ * @fn      		  - RCC_GetPCLK2Value
+ *
+ * @brief             - This function gets clock source from APB bus
+ *
+ * @param[in]         -
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  APB clock
+ *
+ * @Note              -  none
+ */
 uint32_t RCC_GetPCLK2Value(void)
 {
 	uint32_t SystemClock = 0, tmp, pclk2;
@@ -98,6 +122,7 @@ uint32_t RCC_GetPCLK2Value(void)
 	return pclk2;
 
 }
+
 
 uint32_t  RCC_GetPLLOutputClock()
 {
